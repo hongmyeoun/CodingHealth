@@ -21,3 +21,12 @@ class SecondActivity : ComponentActivity() {
         }
     }
 }
+
+// onClick 방식
+//BaseActivity(
+//    currentActivityText = "SecondActivity",
+//    leftButtonText = "MainActivity",
+//    rightButtonText = "ThirdActivity",
+//    onLeftClicked = { startActivity(Intent(this@SecondActivity, MainActivity::class.java)) },
+//    onRightClicked = { startActivity(Intent(this@SecondActivity, ThirdActivity::class.java)) }
+//)

@@ -138,3 +138,70 @@ fun PageButton(
 //        Text(text = text)
 //    }
 //}
+
+// reviews
+// class를 매개변수로 넘겨주는건 조금 위험
+// Activity만 와야하는 상황인데 모든게 다 와서 에러의 원인이 될 가능성이 있음
+// Kotlin Compose에선 일반적으로 onClick의 함수를 넘기는 것을 권장
+// 논리적으로 설명 가능한 나만의 기준을 만드는것은 신입/주니어때 좋음
+
+// onClick 넘겨주는 방식
+//BaseActivity(
+//    currentActivityText = "MainActivity",
+//    leftButtonText = "SecondActivity",
+//    rightButtonText = "ThirdActivity",
+//    onLeftClicked = { startActivity(Intent(this@MainActivity, SecondActivity::class.java)) },
+//    onRightClicked = { startActivity(Intent(this@MainActivity, ThirdActivity::class.java)) }
+//)
+
+//@Composable
+//fun BaseActivity(
+//    currentActivityText: String,
+//    leftButtonText: String,
+//    rightButtonText: String,
+//    onLeftClicked: () -> Unit,
+//    onRightClicked: () -> Unit
+//){
+//    Column(
+//        modifier = Modifier.fillMaxSize(),
+//        verticalArrangement = Arrangement.Center,
+//        horizontalAlignment = Alignment.CenterHorizontally
+//    ) {
+//        Text(text = currentActivityText)
+//        MoveActivityButtons(
+//            leftButtonText = leftButtonText,
+//            onLeftClicked = { onLeftClicked() },
+//            rightButtonText = rightButtonText,
+//            onRightClicked = { onRightClicked() }
+//        )
+//    }
+//}
+//
+//@Composable
+//fun MoveActivityButtons(
+//    leftButtonText: String,
+//    onLeftClicked: () -> Unit,
+//    rightButtonText: String,
+//    onRightClicked: () -> Unit
+//){
+//    Row {
+//        PageButton(
+//            text = leftButtonText,
+//            onClicked = { onLeftClicked() }
+//        )
+//        PageButton(
+//            text = rightButtonText,
+//            onClicked = { onRightClicked() }
+//        )
+//    }
+//}
+//
+//@Composable
+//fun PageButton(
+//    text: String,
+//    onClicked: () -> Unit
+//){
+//    Button(onClick = { onClicked() }) {
+//        Text(text = text)
+//    }
+//}
