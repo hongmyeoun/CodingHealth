@@ -1,4 +1,4 @@
-package com.example.codinghealth.model
+package com.example.codinghealth
 
 import kotlin.random.Random
 

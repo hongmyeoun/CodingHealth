@@ -1,10 +1,9 @@
-package com.example.codinghealth.viewModel
+package com.example.codinghealth
 
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.codinghealth.model.LottoModel.genRandomNumbers
-import com.example.codinghealth.utill.Utill
+import com.example.codinghealth.LottoModel.genRandomNumbers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
