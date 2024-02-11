@@ -51,6 +51,10 @@ class MainActivity : ComponentActivity() {
 fun Main() {
     val viewModel = LottoViewModel()
 
+    // randomNumbers, currentIndex, genNumbers()의 repeat부분 때문에 "번호 생성" 버튼을 눌렀을때
+    // 번호 하나만 뜨고 바로 randomNumbers가 초기화 됨
+    // 그리고 UI도 번호 하나만 그리고 바로 사라짐
+    // 어떻게 해야할지 모르겠습니다.ㅠㅠ
     val randomNumbers by viewModel.randomNumbers.collectAsState()
     val currentIndex by viewModel.currentIndex.collectAsState()
     val showBonusNumber by viewModel.showBonusNumber.collectAsState()
@@ -62,25 +66,18 @@ fun Main() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column {
-            // .take(n) : list의 n개의 요소를 가져옴 여기선 currentIndex가 5까지 증가하니 최종 6개를 가져옴
-            randomNumbers.take(if (showBonusNumber) 7 else currentIndex + 1).forEachIndexed { index, number ->
-                val randomColor = if (number == randomNumbers.last() && showBonusNumber) {
-                    Color(0xFFFFEB3B) // 보너스 번호의 색상을 고정
-                } else {
-                    randomColorMap[number] ?: Color(
-                        red = Random.nextFloat(),
-                        green = Random.nextFloat(),
-                        blue = Random.nextFloat(),
-                        alpha = 1f
-                    )
-                }
+            val maxIndex = if (showBonusNumber) 6 else minOf(currentIndex, randomNumbers.size - 1)
+
+            for (index in 0..maxIndex) {
+                val number = randomNumbers[index]
+                val isBonusNumber = index == maxIndex && showBonusNumber
+                val randomColor = randomColorMap[number] ?: viewModel.getRandomColor()
                 randomColorMap[number] = randomColor
-                val textColor = if (calculateBrightness(randomColor) > 0.5f) Color.Black else Color.White
 
                 LottoBall(
                     number = number,
-                    textColor = textColor,
-                    backgroundColor = randomColor
+                    textColor = viewModel.getTextColor(randomColor),
+                    backgroundColor = if (isBonusNumber) Color(0xFFFFEB3B) else randomColor
                 )
             }
         }
@@ -105,7 +102,6 @@ fun Main() {
             text = "보너스 번호 확인"
         )
     }
-
 }
 
 @Composable
@@ -143,6 +139,7 @@ fun CustomButton(
 
 }
 
+// 이건 잘 되는 코드(이렇게 작동하게 하고 싶었음)
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {

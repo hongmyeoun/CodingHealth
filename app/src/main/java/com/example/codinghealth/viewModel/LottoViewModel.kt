@@ -1,17 +1,15 @@
 package com.example.codinghealth.viewModel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.codinghealth.model.LottoModel.genRandomNumbers
+import com.example.codinghealth.utill.Utill
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class LottoViewModel: ViewModel() {
     private val _randomNumbers = MutableStateFlow(listOf<Int>())
@@ -20,7 +18,6 @@ class LottoViewModel: ViewModel() {
     val currentIndex: StateFlow<Int> = _currentIndex
     private val _showBonusNumber = MutableStateFlow(false)
     val showBonusNumber: StateFlow<Boolean> = _showBonusNumber
-    private val _randomColorMap = MutableStateFlow(mutableMapOf<Int, Color>())
 
     fun showBonusNumber(){
         _showBonusNumber.value = true
@@ -33,6 +30,19 @@ class LottoViewModel: ViewModel() {
     fun resetNumber(){
         _randomNumbers.value = listOf()
         _currentIndex.value = 0
+    }
+
+    fun getRandomColor(): Color {
+        return Color(
+            red = Random.nextFloat(),
+            green = Random.nextFloat(),
+            blue = Random.nextFloat(),
+            alpha = 1f
+        )
+    }
+
+    fun getTextColor(color: Color): Color {
+        return if (Utill.calculateBrightness(color) > 0.5f) Color.Black else Color.White
     }
 
     fun genNumbers(){
