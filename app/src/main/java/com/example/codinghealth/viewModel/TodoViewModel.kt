@@ -1,4 +1,4 @@
-package com.example.codinghealth
+package com.example.codinghealth.viewModel
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
