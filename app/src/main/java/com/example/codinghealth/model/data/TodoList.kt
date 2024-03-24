@@ -1,4 +1,4 @@
-package com.example.codinghealth.model
+package com.example.codinghealth.model.data
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -8,5 +8,5 @@ import androidx.room.PrimaryKey
 data class TodoList(
     @PrimaryKey(autoGenerate = true) val uid: Int = 0,
     @ColumnInfo("checked") val checked: Boolean = false,
-    @ColumnInfo("script") val script: String? = null,
+    @ColumnInfo("script") val script: String = "",
 )

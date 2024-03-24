@@ -1,4 +1,4 @@
-package com.example.codinghealth.model
+package com.example.codinghealth.model.data
 
 import android.content.Context
 import androidx.room.Database
@@ -13,7 +13,7 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE?: synchronized(this){
+            return INSTANCE ?: synchronized(this){
                 val db = Room.databaseBuilder(
                     context = context,
                     klass = AppDatabase::class.java,

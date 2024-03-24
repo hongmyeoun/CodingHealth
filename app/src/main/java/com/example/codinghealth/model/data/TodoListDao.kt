@@ -1,4 +1,4 @@
-package com.example.codinghealth.model
+package com.example.codinghealth.model.data
 
 import androidx.room.Dao
 import androidx.room.Delete
