@@ -21,26 +21,20 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismiss
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
@@ -48,15 +42,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.example.codinghealth.model.AppDatabase
-import com.example.codinghealth.model.TodoList
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.example.codinghealth.model.data.TodoList
+import com.example.codinghealth.viewModel.TodoItemViewModel
+import com.example.codinghealth.viewModel.TodoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodoList() {
+fun TodoList(viewModel: TodoViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -65,17 +57,13 @@ fun TodoList() {
             )
         }
     ) {
-        Content(it)
+        Content(it, viewModel)
     }
 }
 
 @Composable
-private fun Content(it: PaddingValues) {
-    val context = LocalContext.current
-    val db = remember { AppDatabase.getDatabase(context) }
-    val todoList by db.todoListDao().getAll().collectAsState(initial = emptyList())
-
-    val scope = rememberCoroutineScope()
+private fun Content(it: PaddingValues, viewModel: TodoViewModel) {
+    val todoList by viewModel.todoList.collectAsState()
 
     LazyColumn(
         modifier = Modifier
@@ -83,19 +71,15 @@ private fun Content(it: PaddingValues) {
             .padding(it)
     ) {
         items(todoList, key = { item -> item.uid }) {
+            val itemViewModel = remember { TodoItemViewModel(it.script, it.checked) }
             CheckList(
                 todoList = it,
-                db = db,
-                scope = scope,
+                viewModel = viewModel,
+                itemViewModel = itemViewModel
             )
         }
         item {
-            AddButton {
-                val newTodoList = TodoList()
-                scope.launch(Dispatchers.IO) {
-                    db.todoListDao().insertAll(newTodoList)
-                }
-            }
+            AddButton { viewModel.addList() }
         }
     }
 }
@@ -138,11 +122,9 @@ private fun CustomIconButton(
 @Composable
 private fun CheckList(
     todoList: TodoList,
-    db: AppDatabase,
-    scope: CoroutineScope,
+    viewModel: TodoViewModel,
+    itemViewModel: TodoItemViewModel
 ) {
-    var text by remember { mutableStateOf(todoList.script) }
-    var isChecked by remember { mutableStateOf(todoList.checked) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
@@ -152,19 +134,16 @@ private fun CheckList(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
-                checked = isChecked,
+                checked = itemViewModel.isChecked,
                 onCheckedChange = {
-                    isChecked = it
-                    scope.launch(Dispatchers.IO) {
-                        val update = todoList.copy(checked = isChecked)
-                        db.todoListDao().update(update)
-                    }
+                    itemViewModel.checkboxValueChange(it)
+                    viewModel.checkUpdate(todoList, itemViewModel.isChecked)
                 }
             )
             TextField(
                 modifier = Modifier.weight(3f),
-                value = text ?: "",
-                onValueChange = { text = it },
+                value = itemViewModel.text,
+                onValueChange = { itemViewModel.textValueChange(it) },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
@@ -173,8 +152,8 @@ private fun CheckList(
                     disabledContainerColor = Color.Transparent, // 비활성화 색
                     disabledIndicatorColor = Color.Transparent // 비활성화 테두리 밑
                 ),
-                enabled = !isChecked,
-                textStyle = if (isChecked) {
+                enabled = !itemViewModel.isChecked,
+                textStyle = if (itemViewModel.isChecked) {
                     TextStyle(
                         fontStyle = FontStyle.Italic, // 기울임
                         textDecoration = TextDecoration.LineThrough, // 취소선
@@ -189,10 +168,7 @@ private fun CheckList(
                 keyboardActions = KeyboardActions(
                     onDone = {
                         keyboardController?.hide()
-                        scope.launch(Dispatchers.IO) {
-                            val update = todoList.copy(script = text)
-                            db.todoListDao().update(update)
-                        }
+                        viewModel.textUpdate(todoList, itemViewModel.text)
                         focusManager.clearFocus()
                     }
                 )
@@ -200,11 +176,7 @@ private fun CheckList(
             CustomIconButton(
                 modifier = Modifier.weight(0.5f),
                 imageVector = Icons.Rounded.Delete,
-                onClicked = {
-                    scope.launch(Dispatchers.IO) {
-                        db.todoListDao().delete(todoList)
-                    }
-                }
+                onClicked = { viewModel.delete(todoList) }
             )
         }
         Divider()
