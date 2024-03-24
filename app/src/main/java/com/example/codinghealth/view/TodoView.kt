@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -20,28 +21,38 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismiss
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.example.codinghealth.viewModel.TodoViewModel
+import com.example.codinghealth.model.AppDatabase
+import com.example.codinghealth.model.TodoList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,42 +71,46 @@ fun TodoList() {
 
 @Composable
 private fun Content(it: PaddingValues) {
-    val viewModel = TodoViewModel()
+    val context = LocalContext.current
+    val db = remember { AppDatabase.getDatabase(context) }
+    val todoList by db.todoListDao().getAll().collectAsState(initial = emptyList())
+
+    val scope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(it)
     ) {
-        items(viewModel.listCount.value) {
-            CheckList()
+        items(todoList, key = { item -> item.uid }) {
+            CheckList(
+                todoList = it,
+                db = db,
+                scope = scope,
+            )
         }
         item {
-            AddAndDelete(
-                onAddClicked = { viewModel.addList() },
-                onDeleteClicked = { viewModel.deleteList() }
-            )
+            AddButton {
+                val newTodoList = TodoList()
+                scope.launch(Dispatchers.IO) {
+                    db.todoListDao().insertAll(newTodoList)
+                }
+            }
         }
     }
 }
 
 
 @Composable
-private fun AddAndDelete(
-    onAddClicked: () -> Unit,
-    onDeleteClicked: () -> Unit
+private fun AddButton(
+    onAddClicked: () -> Unit
 ) {
     Column {
         Row(modifier = Modifier.fillMaxWidth()) {
             CustomIconButton(
-                modifier = Modifier.weight(0.5f),
+                modifier = Modifier.weight(1f),
                 imageVector = Icons.Rounded.Add,
                 onClicked = { onAddClicked() }
-            )
-            CustomIconButton(
-                modifier = Modifier.weight(0.5f),
-                imageVector = Icons.Rounded.Delete,
-                onClicked = { onDeleteClicked() }
             )
         }
         Divider()
@@ -121,10 +136,15 @@ private fun CustomIconButton(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun CheckList() {
-    var text by remember { mutableStateOf("") }
-    var isChecked by remember { mutableStateOf(false) }
+private fun CheckList(
+    todoList: TodoList,
+    db: AppDatabase,
+    scope: CoroutineScope,
+) {
+    var text by remember { mutableStateOf(todoList.script) }
+    var isChecked by remember { mutableStateOf(todoList.checked) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     Column {
         Row(
@@ -133,10 +153,17 @@ private fun CheckList() {
         ) {
             Checkbox(
                 checked = isChecked,
-                onCheckedChange = { isChecked = it }
+                onCheckedChange = {
+                    isChecked = it
+                    scope.launch(Dispatchers.IO) {
+                        val update = todoList.copy(checked = isChecked)
+                        db.todoListDao().update(update)
+                    }
+                }
             )
             TextField(
-                value = text,
+                modifier = Modifier.weight(3f),
+                value = text ?: "",
                 onValueChange = { text = it },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
@@ -159,7 +186,25 @@ private fun CheckList() {
                     )
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() })
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                        scope.launch(Dispatchers.IO) {
+                            val update = todoList.copy(script = text)
+                            db.todoListDao().update(update)
+                        }
+                        focusManager.clearFocus()
+                    }
+                )
+            )
+            CustomIconButton(
+                modifier = Modifier.weight(0.5f),
+                imageVector = Icons.Rounded.Delete,
+                onClicked = {
+                    scope.launch(Dispatchers.IO) {
+                        db.todoListDao().delete(todoList)
+                    }
+                }
             )
         }
         Divider()
